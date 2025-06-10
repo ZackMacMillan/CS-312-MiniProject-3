@@ -9,29 +9,33 @@
 
 <body style="background: #eee; padding-top: 30px;">
   <div style="width: 85%; max-width: 760px; margin: auto; background: #fff; padding: 25px; border-radius: 8px;">
-<h1 style="text-align: center; margin-bottom: 30px;">Time to Blog</h1>
- <div style="text-align: center; margin-bottom: 20px;">
+<h1 style="text-align: center; margin-bottom: 39px;">Time to Blog</h1>
+ <div style="text-align: center;">
       <a href="/posts/new" style="background: navy; padding: 10px 16px; color: white; text-decoration: none; border-radius: 5px;">+ New Post</a>
     </div>
 
 
-<% if (posts.length == 0) { %>
- <div style="text-align: center; color: #666;">Blogging is the best</div>
+<% if(posts.length == 0) { %>
+ <div style="text-align: center; color: #666;"></div>
     <% } %>
 
    
 <% posts.forEach(function(post, i) { %>
- <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 6px;">
+ <div style="margin-bottom: 22px; padding: 15px;">
         <h4><%= post.title %></h4>
         <p><%= post.content %></p>
 
+<small class="text-muted">
+        Posted by <%= post.author %> on <%= post.timestamp %>
+      </small>
 <div>
-          <form method="GET" action="/posts/<%= i %>/edit" style="display:inline;">
+             <form method="GET" action="/posts/<%= i %>/edit" style="display:inline;">
             <button style="padding: 5px 12px; font-size: 14px;">Edit</button>
           </form>
 
-          <form method="POST" action="/posts/<%= i %>/delete" style="display:inline;">
-            <button onclick="return confirm('Delete this post?')" style="padding: 5px 12px; background: darkred; color: white; border: none;">Delete</button>
+ <form method="POST" action="/posts/<%= i %>/delete" style="display:inline;">
+   <button onclick="return confirm('Delete this post?')" style="padding: 5px 12px; background: darkred; color: white; border: none;">Delete</button>
+
 </form>
         </div>
       </div>

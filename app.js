@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const app = express();
 const PORT = 3000;
 
@@ -7,72 +6,78 @@ let posts = [];
 
 app.set('view engine', 'ejs');
 
-app.use(bodyParser.urlencoded({ extended: true }));
-
+// Middleware
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
-console.log('Current working directory:', process.cwd());
-
+// Home route
 app.get('/', (req, res) => {
-  res.render('index', { posts });
+    res.render('index', { posts });
 });
 
+// New post form
 app.get('/posts/new', (req, res) => {
-  res.render('new');
+    res.render('new');
 });
 
+// Handle post creation
 app.post('/posts', (req, res) => {
-  const newPost = {
-    title: req.body.title,
-    content: req.body.content,
-  };
+    const { title, content, author } = req.body;
 
-  posts.push(newPost);
-  res.redirect('/');
+    if (!title || !content) {
+        return res.send('Missing fields. Please go back and try again.');
+    }
+
+    const newEntry = {
+        title,
+        content,
+        author: author,
+        timestamp: new Date().toLocaleString()
+    };
+
+    posts.push(newEntry);
+    res.redirect('/');
 });
 
+// Edit form
 app.get('/posts/:index/edit', (req, res) => {
-  const index = req.params.index;
-  const post = posts[index];
+    const idx = parseInt(req.params.index, 10);
+    const post = posts[idx];
 
-  if (!post) {
-    return res.status(404).send('Post not found');
-  }
+    if (!post) {
+        return res.status(404).send('Post not found, maybe it was deleted?');
+    }
 
-  res.render('edit', { post, index });
+    res.render('edit', { post, index: idx });
 });
 
+// Handle edits
 app.post('/posts/:index', (req, res) => {
-  const index = req.params.index;
+    const idx = parseInt(req.params.index, 10);
+    const { title, content } = req.body;
 
-  if (!posts[index]) {
-    return res.status(404).send('Post not found');
-  }
+    if (!posts[idx]) {
+        return res.status(404).send('Post no longer exists');
+    }
 
-  
-  posts[index] = {
-    title: req.body.title,
-    content: req.body.content,
-  };
+    posts[idx].title = title || posts[idx].title;
+    posts[idx].content = content || posts[idx].content;
 
-  
-  res.redirect('/');
+    res.redirect('/');
 });
 
+// Delete post
 app.post('/posts/:index/delete', (req, res) => {
-  const index = req.params.index;
+    const idx = parseInt(req.params.index, 10);
 
-  if (!posts[index]) {
-    return res.status(404).send('Post not found');
-  }
+    if (!posts[idx]) {
+        return res.status(404).send('Nothing to delete here.');
+    }
 
-  
-  posts.splice(index, 1);
-
-  
-  res.redirect('/');
+    posts.splice(idx, 1);
+    res.redirect('/');
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+    console.log(`Running the show at http://localhost:${PORT}`);
 });
