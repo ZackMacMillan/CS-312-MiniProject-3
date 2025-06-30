@@ -11,32 +11,27 @@
 
 <div class="container" style="max-width: 700px;">
 
-    <h2 style="text-align:center; margin-bottom: 25px;">Start a New Entry</h2>
+  <h2 style="text-align:center; margin-bottom: 25px;">Start a New Entry</h2>
 
-    <form method="POST" action="/posts" style="background: white; padding: 20px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-      
-<div style="margin-bottom: 15px;">
-        <label>Blog Title</label>
-        <input type= text id= title 						name= title placeholder="Whats the Point?" class=form-control>
-      </div>
+  <form method="POST" action="/posts" style="background: white; padding: 20px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    
+    <div style="margin-bottom: 15px;">
+      <label for="title">Blog Title</label>
+      <input type="text" id="title" name="title" placeholder="What's the Point?" class="form-control" required>
+    </div>
 
-<div style="margin-bottom: 15px;">
-    <label>Body of Content</label>
-        <textarea id= content name= content rows="6" class="form-control"></textarea>
-      </div>
+    <div style="margin-bottom: 15px;">
+      <label for="content">Body of Content</label>
+      <textarea id="content" name="content" rows="6" class="form-control" required></textarea>
+    </div>
 
-<div style="margin-bottom: 15px;">
-        <label for="author">Author of this blog</label>
-  <input id="author" name="author" class="form-control" 
-placeholder="Can I have your autograph?">
-      </div>
-
- <div style="text-align: right;">
+    <div style="text-align: right;">
       <button type="submit" class="btn btn-dark">Save Post</button>
-   <a href="/" class="btn btn-link">Go Back</a>
-      </div>
-    </form>
-  </div>
+      <a href="/" class="btn btn-link">Go Back</a>
+    </div>
+  </form>
+
+</div>
 
 </body>
 </html>

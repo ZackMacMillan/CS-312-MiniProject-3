@@ -9,35 +9,41 @@
 
 <body style="background: #eee; padding-top: 30px;">
   <div style="width: 85%; max-width: 760px; margin: auto; background: #fff; padding: 25px; border-radius: 8px;">
-<h1 style="text-align: center; margin-bottom: 39px;">Time to Blog</h1>
- <div style="text-align: center;">
-      <a href="/posts/new" style="background: navy; padding: 10px 16px; color: white; text-decoration: none; border-radius: 5px;">+ New Post</a>
+    <h1 style="text-align: center; margin-bottom: 39px;">Time to Blog</h1>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+      <% if (user) { %>
+        <a href="/posts/new" style="background: navy; padding: 10px 16px; color: white; text-decoration: none; border-radius: 5px;">+ New Post</a>
+      <% } else { %>
+        <a href="/signup" style="margin-right: 10px;">Sign Up</a>
+        <a href="/signin">Sign In</a>
+      <% } %>
     </div>
 
-
-<% if(posts.length == 0) { %>
- <div style="text-align: center; color: #666;"></div>
+    <% if (posts.length === 0) { %>
+      <div style="text-align: center; color: #666;">No posts yet. Be the first to write one!</div>
     <% } %>
 
-   
-<% posts.forEach(function(post, i) { %>
- <div style="margin-bottom: 22px; padding: 15px;">
+    <% posts.forEach(function(post) { %>
+      <div style="margin-bottom: 22px; padding: 15px;">
         <h4><%= post.title %></h4>
-        <p><%= post.content %></p>
+        <p><%= post.body %></p>
 
-<small class="text-muted">
-        Posted by <%= post.author %> on <%= post.timestamp %>
-      </small>
-<div>
-             <form method="GET" action="/posts/<%= i %>/edit" style="display:inline;">
-            <button style="padding: 5px 12px; font-size: 14px;">Edit</button>
-          </form>
+        <small class="text-muted">
+          Posted by <%= post.creator_name %> on <%= new Date(post.date_created).toLocaleString() %>
+        </small>
 
- <form method="POST" action="/posts/<%= i %>/delete" style="display:inline;">
-   <button onclick="return confirm('Delete this post?')" style="padding: 5px 12px; background: darkred; color: white; border: none;">Delete</button>
+        <% if (user === post.creator_user_id) { %>
+          <div style="margin-top: 10px;">
+            <form method="GET" action="/posts/<%= post.blog_id %>/edit" style="display:inline;">
+              <button style="padding: 5px 12px; font-size: 14px;">Edit</button>
+            </form>
 
-</form>
-        </div>
+            <form method="POST" action="/posts/<%= post.blog_id %>/delete" style="display:inline;">
+              <button onclick="return confirm('Delete this post?')" style="padding: 5px 12px; background: darkred; color: white; border: none;">Delete</button>
+            </form>
+          </div>
+        <% } %>
       </div>
     <% }) %>
   </div>

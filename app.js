@@ -2,80 +2,182 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
-let posts = [];
+const session = require('express-session');
+const pool = require('./db');
 
 app.set('view engine', 'ejs');
 
-// Middleware
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
-// Home route
-app.get('/', (req, res) => {
-    res.render('index', { posts });
+app.use(session({
+    secret: 'secret123',
+    resave: false,
+    saveUninitialized: false
+}));
+
+// Home route - Show all blog posts
+app.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM blogs ORDER BY date_created DESC');
+        res.render('index', { posts: result.rows, user: req.session.user_id });
+    } catch (err) {
+        console.error(err);
+        res.send('Error loading posts.');
+    }
+});
+
+// Sign up form
+app.get('/signup', (req, res) => {
+    res.render('signup');
+});
+
+// Handle sign up
+app.post('/signup', async (req, res) => {
+    const { user_id, password, name } = req.body;
+
+    try {
+        const existing = await pool.query('SELECT * FROM users WHERE user_id = $1', [user_id]);
+        if (existing.rows.length > 0) {
+            return res.send('That user ID is taken, pick another.');
+        }
+
+        await pool.query('INSERT INTO users (user_id, password, name) VALUES ($1, $2, $3)', [user_id, password, name]);
+        res.redirect('/signin');
+    } catch (err) {
+        console.error(err);
+        res.send('Something went wrong signing up.');
+    }
+});
+
+// Sign in form
+app.get('/signin', (req, res) => {
+    res.render('signin');
+});
+
+// Handle sign in
+app.post('/signin', async (req, res) => {
+    const { user_id, password } = req.body;
+
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE user_id = $1 AND password = $2', [user_id, password]);
+        
+        if (result.rows.length === 0) {
+            return res.send('Wrong user ID or password.');
+        }
+
+        req.session.user_id = result.rows[0].user_id;
+        req.session.name = result.rows[0].name;
+
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.send('Error signing in.');
+    }
 });
 
 // New post form
 app.get('/posts/new', (req, res) => {
+    if (!req.session.user_id) {
+        return res.redirect('/signin');
+    }
     res.render('new');
 });
 
 // Handle post creation
-app.post('/posts', (req, res) => {
-    const { title, content, author } = req.body;
+app.post('/posts', async (req, res) => {
+    const { title, content } = req.body;
 
     if (!title || !content) {
         return res.send('Missing fields. Please go back and try again.');
     }
 
-    const newEntry = {
-        title,
-        content,
-        author: author,
-        timestamp: new Date().toLocaleString()
-    };
-
-    posts.push(newEntry);
-    res.redirect('/');
+    try {
+        await pool.query(
+            'INSERT INTO blogs (creator_name, creator_user_id, title, body) VALUES ($1, $2, $3, $4)',
+            [req.session.name, req.session.user_id, title, content]
+        );
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.send('Couldn\'t save your post.');
+    }
 });
 
 // Edit form
-app.get('/posts/:index/edit', (req, res) => {
-    const idx = parseInt(req.params.index, 10);
-    const post = posts[idx];
+app.get('/posts/:id/edit', async (req, res) => {
+    const id = req.params.id;
 
-    if (!post) {
-        return res.status(404).send('Post not found, maybe it was deleted?');
+    try {
+        const result = await pool.query('SELECT * FROM blogs WHERE blog_id = $1', [id]);
+        const post = result.rows[0];
+
+        if (!post) {
+            return res.status(404).send('Post not found.');
+        }
+
+        if (post.creator_user_id !== req.session.user_id) {
+            return res.send('Nice try, but you can only edit your own posts.');
+        }
+
+        res.render('edit', { post });
+    } catch (err) {
+        console.error(err);
+        res.send('Error loading post.');
     }
-
-    res.render('edit', { post, index: idx });
 });
 
 // Handle edits
-app.post('/posts/:index', (req, res) => {
-    const idx = parseInt(req.params.index, 10);
+app.post('/posts/:id', async (req, res) => {
+    const id = req.params.id;
     const { title, content } = req.body;
 
-    if (!posts[idx]) {
-        return res.status(404).send('Post no longer exists');
+    try {
+        const result = await pool.query('SELECT * FROM blogs WHERE blog_id = $1', [id]);
+        const post = result.rows[0];
+
+        if (!post) {
+            return res.status(404).send('Post not found.');
+        }
+
+        if (post.creator_user_id !== req.session.user_id) {
+            return res.send('You can only edit your own posts.');
+        }
+
+        await pool.query(
+            'UPDATE blogs SET title = $1, body = $2 WHERE blog_id = $3',
+            [title || post.title, content || post.body, id]
+        );
+
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.send('Couldn\'t update the post.');
     }
-
-    posts[idx].title = title || posts[idx].title;
-    posts[idx].content = content || posts[idx].content;
-
-    res.redirect('/');
 });
 
 // Delete post
-app.post('/posts/:index/delete', (req, res) => {
-    const idx = parseInt(req.params.index, 10);
+app.post('/posts/:id/delete', async (req, res) => {
+    const id = req.params.id;
 
-    if (!posts[idx]) {
-        return res.status(404).send('Nothing to delete here.');
+    try {
+        const result = await pool.query('SELECT * FROM blogs WHERE blog_id = $1', [id]);
+        const post = result.rows[0];
+
+        if (!post) {
+            return res.status(404).send('Post not found.');
+        }
+
+        if (post.creator_user_id !== req.session.user_id) {
+            return res.send('You can only delete your own posts.');
+        }
+
+        await pool.query('DELETE FROM blogs WHERE blog_id = $1', [id]);
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.send('Couldn\'t delete the post.');
     }
-
-    posts.splice(idx, 1);
-    res.redirect('/');
 });
 
 app.listen(PORT, () => {
